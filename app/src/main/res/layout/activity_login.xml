@@ -57,5 +57,13 @@
         android:layout_marginBottom="30dp"
         android:text="@string/Sem_Conta" />
 
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_marginTop="20dp"
+        android:layout_width="match_parent"
+        android:visibility="invisible"
+        android:layout_height="wrap_content" />
+
 
 </LinearLayout>

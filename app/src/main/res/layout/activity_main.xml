@@ -30,7 +30,7 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_baseline_add_circle_outline_24"
+        android:src="@drawable/ic_add"
         android:tint="@android:color/white"
         app:backgroundTint="@color/purple_700" />
 
