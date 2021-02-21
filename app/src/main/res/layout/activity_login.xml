@@ -58,19 +58,13 @@
 
 
     <Button
-        android:id="@+id/botao_registrar"
+        android:id="@+id/botao_login"
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:background="@drawable/buttoncustumizer"
         android:text="Entrar"
         android:layout_marginTop="10dp"
         android:textColor="@color/white" />
-
-    <com.google.android.gms.common.SignInButton
-        android:id="@+id/google_sign_in"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -87,4 +81,10 @@
         android:layout_marginTop="15dp"
         android:text="@string/Sem_Conta" />
 
+
+    <com.google.android.gms.common.SignInButton
+        android:id="@+id/google_sign_in"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" />
 </LinearLayout>
