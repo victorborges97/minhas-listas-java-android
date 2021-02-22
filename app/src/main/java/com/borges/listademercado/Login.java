@@ -1,10 +1,6 @@
 
 package com.borges.listademercado;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -15,23 +11,25 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.google.android.gms.auth.api.phone.SmsRetriever;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.GoogleSignatureVerifier;
 import com.google.android.gms.common.SignInButton;
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 
+import java.sql.Struct;
 import java.util.Objects;
 
 public class Login extends AppCompatActivity {
@@ -40,9 +38,10 @@ public class Login extends AppCompatActivity {
     Button mLogin;
     SignInButton mSignInGoogle;
     private FirebaseAuth Auth;
-    private static final int RC_SIGN_IN = 1;
-    private GoogleSignInClient mGoogleSignInClient;
-    private GoogleSignInAccount account;
+    private static final int RC_SIGN_IN = 1000;
+    GoogleSignInClient mGoogleSignInClient;
+    GoogleSignInOptions gso;
+    GoogleSignInAccount account;
     ProgressBar progressBar;
 
     @Override
@@ -51,41 +50,39 @@ public class Login extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         this.getSupportActionBar().hide();
+
+        // Obtain the FirebaseAnalytics instance.
+        FirebaseAnalytics mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
         Auth = FirebaseAuth.getInstance();
 
         verificarSeTemUsuarioLogadoComEmailSenha(Auth);
 
-        mEmail = findViewById(R.id.input_text_email);
-        mPassword = findViewById(R.id.input_text_password);
         mLogin = findViewById(R.id.botao_login);
         mSignInGoogle = findViewById(R.id.google_sign_in);
         progressBar = findViewById(R.id.progressBar);
 
-
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
+        gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.web_client_id))
+            .requestEmail()
+            .build();
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-        account = GoogleSignIn.getLastSignedInAccount(this);
-
-        if(account != null){
-            Log.i(TAG, String.valueOf(account.getEmail()));
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            finish(); /*Esse porrinha faz não voltar para a tela anterior*/
-        }
 
         mSignInGoogle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                signIn();
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                startActivityForResult(signInIntent, RC_SIGN_IN);
             }
         });
-
 
         mLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mEmail = findViewById(R.id.input_text_email);
+                mPassword = findViewById(R.id.input_text_password);
+
                 String email = mEmail.getText().toString().trim();
                 String password = mPassword.getText().toString().trim();
                 isSignInGoing(true);
@@ -137,13 +134,22 @@ public class Login extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        account = GoogleSignIn.getLastSignedInAccount(this);
+
+        if(account != null){
+            Log.i(TAG, String.valueOf(account.getEmail()));
+            gotoProfile();
+        }
+    }
+
     private void verificarSeTemUsuarioLogadoComEmailSenha(FirebaseAuth Auth) {
         if(Auth.getCurrentUser() != null){
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            finish(); /*Esse porrinha faz não voltar para a tela anterior*/
+            gotoProfile();
             return;
         }
-
     }
 
     private void blocksFields(boolean b) {
@@ -162,20 +168,43 @@ public class Login extends AppCompatActivity {
         mLogin.setText(email);
     }
 
-    private void signIn() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        startActivityForResult(signInIntent, RC_SIGN_IN);
-    }
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == Activity.RESULT_OK) {
-            if (RC_SIGN_IN == requestCode) {
-                startActivity(new Intent(getApplicationContext(), MainActivity.class));
-                finish(); /*Esse porrinha faz não voltar para a tela anterior*/
+        if (requestCode == RC_SIGN_IN) {
+            try {
+                Task<GoogleSignInAccount> result = GoogleSignIn.getSignedInAccountFromIntent(data);
+                GoogleSignInAccount signInAcc = result.getResult(ApiException.class);
+                firebaseAuth(signInAcc);
+            } catch (ApiException e) {
+                Log.w(TAG, "ApiException Error: " + e.getStatusCode());
             }
         }
+
+    }
+
+    private void firebaseAuth(GoogleSignInAccount signInAcc) {
+        Auth = FirebaseAuth.getInstance();
+        String tokenGoogle = signInAcc.getIdToken();
+        AuthCredential authCredential = GoogleAuthProvider.getCredential(tokenGoogle, null);
+
+        Auth.signInWithCredential(authCredential).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if(task.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "Your Google Account is Connected to Our Application.", Toast.LENGTH_SHORT).show();
+                    gotoProfile();
+                } else {
+                    Log.w(TAG, "signInWithCredential:failure", task.getException());
+                    Toast.makeText(getApplicationContext(), "Authentication Failed.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void gotoProfile() {
+        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+        finish(); /*Esse porrinha faz não voltar para a tela anterior*/
     }
 
 

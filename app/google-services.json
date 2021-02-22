@@ -14,8 +14,12 @@
       },
       "oauth_client": [
         {
-          "client_id": "23352328487-e7e22qrj011e3kiiuffhoc9u6qikfk2v.apps.googleusercontent.com",
-          "client_type": 3
+          "client_id": "23352328487-bhlj297hene3ca6rmb7lbpvgkuf8akrb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.borges.listademercado",
+            "certificate_hash": "22dd19ba91f4fe2c2881234c5528bb3b61bf5bfe"
+          }
         }
       ],
       "api_key": [
@@ -25,12 +29,7 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "23352328487-e7e22qrj011e3kiiuffhoc9u6qikfk2v.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
